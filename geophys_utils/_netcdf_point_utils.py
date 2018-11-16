@@ -904,6 +904,7 @@ class NetCDFPointUtils(NetCDFUtils):
             #if _key_existing_size__list(s3_client, self.s3_bucket, s3_key):
                 ret = s3_object_s.get()['Body'].read().decode('utf-8')
                 xycoords = np.fromstring(ret, dtype=float)
+                logger.debug(xycoords)
             else:
                 logger.debug('getting xycoords')
                 xycoords = self.get_xy_coord_values()
