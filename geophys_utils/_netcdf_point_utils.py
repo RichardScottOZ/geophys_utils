@@ -146,18 +146,7 @@ class NetCDFPointUtils(NetCDFUtils):
 
         self.point_count = len(xycoords)
 
-        def _key_existing_size__list(client, bucket, key):
-            """return the key's size if it exist, else None"""
-            logger.debug("key returning size list >>>>>>>>>>>>>>")
-            response = client.list_objects_v2(
-                Bucket=bucket,
-                Prefix=key,
-            )
-            for obj in response.get('Contents', []):
-                logger.debug(obj)
-                if obj['Key'] == key:
-                    logger.debug(obj['Size'])
-                    return obj['Size']
+
 
     # ===========================================================================
     # def __del__(self):
@@ -898,7 +887,17 @@ class NetCDFPointUtils(NetCDFUtils):
             logger.debug(s3_key)
             logger.debug(self.cci)
             logger.debug("exists?: " + str(self.cci.exists_object(s3_key)))
-            logger.debug(NetCDFPointUtils.key_existing_size__list(s3_client, self.s3_bucket, s3_key))
+
+
+
+            logger.debug("key returning size list >>>>>>>>>>>>>>")
+            response = s3_client.list_objects_v2(Bucket=self.s3_bucket, Prefix=s3_key,)
+            for obj in response.get('Contents', []):
+                logger.debug(obj)
+                if obj['Key'] == key:
+                    logger.debug(obj['Size'])
+                    return obj['Size']
+
             s3_object_s = s3.Object('kml-server-cache', s3_key)
 
             if self.cci.exists_object(s3_key) is True:
