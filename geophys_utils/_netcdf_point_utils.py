@@ -894,7 +894,7 @@ class NetCDFPointUtils(NetCDFUtils):
             response = s3_client.list_objects_v2(Bucket=self.s3_bucket, Prefix=s3_key,)
             for obj in response.get('Contents', []):
                 logger.debug(obj)
-                if obj['Key'] == key:
+                if obj['Key'] == s3_key:
                     logger.debug(obj['Size'])
                     return obj['Size']
 
