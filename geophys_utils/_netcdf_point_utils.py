@@ -62,6 +62,16 @@ DEFAULT_READ_CHUNK_SIZE = 8192
 POINT_LIMIT = 0
 
 
+def _key_existing_size__list(client, bucket, key):
+    """return the key's size if it exist, else None"""
+    response = client.list_objects_v2(
+        Bucket=bucket,
+        Prefix=key,
+    )
+    for obj in response.get('Contents', []):
+        if obj['Key'] == key:
+            return obj['Size']
+
 class NetCDFPointUtils(NetCDFUtils):
     '''
     NetCDFPointUtils class to do various fiddly things with NetCDF geophysics point data files.
@@ -851,6 +861,8 @@ class NetCDFPointUtils(NetCDFUtils):
 
         return xycoord_values
 
+
+
     @property
     def xycoords(self):
         '''
@@ -868,7 +880,7 @@ class NetCDFPointUtils(NetCDFUtils):
 
         if self.s3_bucket is not None:
             s3 = boto3.resource('s3')
-
+            s3_client = boto3.client('s3')
 
 
 
@@ -881,56 +893,22 @@ class NetCDFPointUtils(NetCDFUtils):
             logger.debug(s3_key)
             logger.debug(self.cci)
             logger.debug("exists?: " + str(self.cci.exists_object(s3_key)))
-            #dict1 = self.cci.cloud2dict(s3_key)
-            #logger.debug("DICT: " + str(dict1))
-            #objects = self.cci.show_objects()
-            #logger.debug("OBJECTS IN BUCKET: " + str(objects))
-            #cottoncandy.cloud2dict()
-            s3_object_s = s3.Object('kml-server-cache', s3_key)
-            if self.cci.exists_object(s3_key) is True:
 
+            s3_object_s = s3.Object('kml-server-cache', s3_key)
+
+            #if self.cci.exists_object(s3_key) is True:
+            if _key_existing_size__list(s3_client, self.s3_bucket, s3_key):
                 ret = s3_object_s.get()['Body'].read().decode('utf-8')
                 xycoords = np.fromstring(ret, dtype=float)
-
-                # logger.debug(self.cci.exists_object(s3_key))
-                # logger.debug('attempting to download array')
-                # xycoords = self.cci.download_raw_array(s3_key)
-                # logger.debug('download success')
-                # logger.debug(np.shape(xycoords))
-                # logger.debug(xycoords)
-                #return xycoords
-
             else:
-
                 logger.debug('getting xycoords')
                 xycoords = self.get_xy_coord_values()
-
                 s = xycoords.tostring()
                 s3_object_s = s3.Object('kml-server-cache', s3_key)
                 s3_object_s.put(Body=s)
-                # logger.debug(type(xycoords))
-                # logger.debug(np.shape(xycoords))
-                # logger.debug(xycoords)
-                # logger.debug('attempting to upload array')
-                # self.cci.upload_raw_array(s3_key, xycoords)
-                # logger.debug('upload success')
-                #return xycoords
 
-        # elif self.memcached_connection is not None:
-        #     coord_cache_key = self.cache_basename + '_xycoords'
-        #
-        #     logger.debug("hit xycoords propery code")
-        #     logger.debug(self.memcached_connection)
-        #
-        #     xycoords = self.memcached_connection.get(coord_cache_key)
-        #     if xycoords is not None:
-        #         # self.memcached_connection.get(self.cache_path) is True:
-        #         logger.debug('memcached key found at {}'.format(coord_cache_key))
-        #         #logger.debug('xycoords: {}'.format(xycoords))
-        #     else:
-        #         xycoords = self.get_xy_coord_values()
-        #         logger.debug("key not found at {}. adding key and value".format(coord_cache_key))
-        #         self.memcached_connection.add(coord_cache_key, xycoords)
+
+
 
 
         elif self.enable_disk_cache is True and self.s3_bucket is None:
