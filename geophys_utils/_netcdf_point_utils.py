@@ -64,12 +64,15 @@ POINT_LIMIT = 0
 
 def _key_existing_size__list(client, bucket, key):
     """return the key's size if it exist, else None"""
+    logger.debug("key returning size list")
     response = client.list_objects_v2(
         Bucket=bucket,
         Prefix=key,
     )
     for obj in response.get('Contents', []):
+        logger.debug(obj)
         if obj['Key'] == key:
+            logger.debug(obj['Size'])
             return obj['Size']
 
 class NetCDFPointUtils(NetCDFUtils):
