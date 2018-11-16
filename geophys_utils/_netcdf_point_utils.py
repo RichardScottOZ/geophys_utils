@@ -37,6 +37,7 @@ from geophys_utils._netcdf_utils import NetCDFUtils
 from geophys_utils._polygon_utils import points2convex_hull
 from scipy.spatial.ckdtree import cKDTree
 import logging
+import boto3
 
 # Setup logging handlers if required
 logger = logging.getLogger(__name__)  # Get logger
@@ -866,6 +867,13 @@ class NetCDFPointUtils(NetCDFUtils):
             return self._xycoords
 
         if self.s3_bucket is not None:
+            s3 = boto3.resource('s3')
+
+
+
+
+
+
             logger.debug("S3 ----------------------------------------")
             logger.debug(self.enable_disk_cache)
             logger.debug(self.s3_bucket)
@@ -878,24 +886,34 @@ class NetCDFPointUtils(NetCDFUtils):
             #objects = self.cci.show_objects()
             #logger.debug("OBJECTS IN BUCKET: " + str(objects))
             #cottoncandy.cloud2dict()
+            s3_object_s = s3.Object('kml-server-cache', s3_key)
             if self.cci.exists_object(s3_key) is True:
-                logger.debug(self.cci.exists_object(s3_key))
-                logger.debug('attempting to download array')
-                xycoords = self.cci.download_raw_array(s3_key)
-                logger.debug('download success')
-                logger.debug(np.shape(xycoords))
-                logger.debug(xycoords)
+
+                ret = s3_object_s.get()['Body'].read().decode('utf-8')
+                xycoords = np.fromstring(ret, dtype=float)
+
+                # logger.debug(self.cci.exists_object(s3_key))
+                # logger.debug('attempting to download array')
+                # xycoords = self.cci.download_raw_array(s3_key)
+                # logger.debug('download success')
+                # logger.debug(np.shape(xycoords))
+                # logger.debug(xycoords)
                 #return xycoords
 
             else:
+
                 logger.debug('getting xycoords')
                 xycoords = self.get_xy_coord_values()
-                logger.debug(type(xycoords))
-                logger.debug(np.shape(xycoords))
-                logger.debug(xycoords)
-                logger.debug('attempting to upload array')
-                self.cci.upload_raw_array(s3_key, xycoords)
-                logger.debug('upload success')
+
+                s = xycoords.tostring()
+                s3_object_s = s3.Object('kml-server-cache', s3_key)
+                s3_object_s.put(Body=s)
+                # logger.debug(type(xycoords))
+                # logger.debug(np.shape(xycoords))
+                # logger.debug(xycoords)
+                # logger.debug('attempting to upload array')
+                # self.cci.upload_raw_array(s3_key, xycoords)
+                # logger.debug('upload success')
                 #return xycoords
 
         # elif self.memcached_connection is not None:
