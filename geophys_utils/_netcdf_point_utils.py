@@ -873,35 +873,22 @@ class NetCDFPointUtils(NetCDFUtils):
             return self._xycoords
 
         if self.s3_bucket is not None:
+            #if s3_bucket is given a value in the settings, use this as data cache
             s3 = boto3.resource('s3')
             s3_client = boto3.client('s3')
-
-
-
-
-
-            logger.debug("S3 ----------------------------------------")
-            logger.debug(self.enable_disk_cache)
-            logger.debug(self.s3_bucket)
             s3_key = re.sub('.nc', '_xycoords_narray', self.cache_path)
-            logger.debug(s3_key)
-            logger.debug(self.cci)
-            logger.debug("exists?: " + str(self.cci.exists_object(s3_key)))
-
-
-
-            logger.debug("key returning size list >>>>>>>>>>>>>>")
             response = s3_client.list_objects_v2(Bucket=self.s3_bucket, Prefix=s3_key,)
-            for obj in response.get('Contents', []):
-                logger.debug(obj)
-                if obj['Key'] == s3_key:
-                    logger.debug(obj['Size'])
-                    return obj['Size']
+
+            # get the size
+            # for obj in response.get('Contents', []):
+            #     logger.debug(obj)
+            #     if obj['Key'] == s3_key:
+            #         logger.debug(obj['Size'])
+            #         return obj['Size']
 
             s3_object_s = s3.Object('kml-server-cache', s3_key)
 
             if self.cci.exists_object(s3_key) is True:
-            #if _key_existing_size__list(s3_client, self.s3_bucket, s3_key):
                 ret = s3_object_s.get()['Body'].read().decode('utf-8')
                 xycoords = np.fromstring(ret, dtype=float)
                 logger.debug(xycoords)
@@ -911,10 +898,6 @@ class NetCDFPointUtils(NetCDFUtils):
                 s = xycoords.tostring()
                 s3_object_s = s3.Object('kml-server-cache', s3_key)
                 s3_object_s.put(Body=s)
-
-
-
-
 
         elif self.enable_disk_cache is True and self.s3_bucket is None:
 
